@@ -173,7 +173,12 @@ ui <- tagList(
               tabPanel("Gene info", value = "panel2", 
                        icon = icon("plus"),
                        sidebarPanel(width = 3,
-                                    uiOutput("UI_settings")
+                                    uiOutput("UI_dataType"),
+                                    uiOutput("UI_settings"),
+                                    uiOutput("UI_IDcolumn"),
+                                    uiOutput("UI_TypeOrColumn"),
+                                    uiOutput("UI_TypeInColumn"),
+                                    uiOutput("UI_addColumns")
                        ),
                        mainPanel(width = 9,
                                  DT::dataTableOutput(outputId = "statTable_view") %>% 

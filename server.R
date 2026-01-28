@@ -106,71 +106,31 @@ server <- function(input, output, session){
       }, options = list(pageLength = 6,
                         dom = "tp"))
       
-      output$UI_settings <- renderUI({
+    })
+    
+    observe({
+      output$UI_dataType <- renderUI({
         tagList(
-          h4(span("Gene ID column",
+          h4(span("Data type",
                   tags$span(
                     icon(
                       name = "question-circle",
                     ) 
                   ) |>
                     prompter::add_prompt(
-                      message = "Which column of the statistics table contains the gene IDs?",
+                      message = "Does your data map to genes/proteins or to 
+                      metabolites?",
                       position = "right",
                       rounded = TRUE,
                       size = "large",
                       type = "info")
           )),
-          selectInput(inputId = "GeneID_column",
-                      label = NULL,
-                      choices = colnames(rv$statTable),
-                      multiple = FALSE),
-          
-          conditionalPanel(
-            condition = "input.TypeInColumn",
-            h4(span("Gene ID type column",
-                    tags$span(
-                      icon(
-                        name = "question-circle",
-                      ) 
-                    ) |>
-                      prompter::add_prompt(
-                        message = "Which column of the statistics table contains the gene ID types?",
-                        position = "right",
-                        rounded = TRUE,
-                        size = "large",
-                        type = "info")
-            )),
-            selectInput(inputId = "GeneID_type_column",
-                        label = NULL,
-                        choices = colnames(rv$statTable),
-                        multiple = FALSE),
-          ),
-          conditionalPanel(
-            condition = "!input.TypeInColumn",
-            h4(span("Gene ID type",
-                    tags$span(
-                      icon(
-                        name = "question-circle",
-                      ) 
-                    ) |>
-                      prompter::add_prompt(
-                        message = "Which gene ID type is used?",
-                        position = "right",
-                        rounded = TRUE,
-                        size = "large",
-                        type = "info")
-            )),
-            selectInput(inputId = "GeneID_type",
-                        label = NULL,
-                        choices = c("SYMBOL", "ENTREZID", "ENSEMBL", "UNIPROT"),
-                        multiple = FALSE,
-                        selected = whichID(rv$statTable[,input$GeneID_column]))
-          ),
-          shinyWidgets::materialSwitch(
-            inputId = "TypeInColumn",
-            label = "Gene ID type in column",
-            value = FALSE
+          checkboxGroupInput( 
+            inputId = "dataType",
+            label = NULL,
+            choices = c("Genes/proteins", "Metabolites"),
+            selected = "Genes/proteins",
+            inline = TRUE
           ),
           
           h4(span("Organism",
@@ -191,8 +151,145 @@ server <- function(input, output, session){
                       label = NULL,
                       choices = c("Homo sapiens", "Bos taurus", "Caenorhabditis elegans", 
                                   "Mus musculus", "Rattus norvegicus"),
-                      multiple = FALSE),
-         
+                      multiple = FALSE)
+          
+          
+        )
+      })
+    })
+    
+    observe({
+      IDchoices <- NULL
+      if ("Genes/proteins" %in% input$dataType){
+        annGenes_temp <- switch(input$organism,
+                                "Homo sapiens" = "org.Hs.eg.db",
+                                "Bos taurus" = "org.Bt.eg.db",
+                                "Caenorhabditis elegans" = "org.Ce.eg.db",
+                                "Mus musculus" = "org.Mm.eg.db",
+                                "Rattus norvegicus" = "org.Rn.eg.db"
+        )
+        
+        IDchoices <- c(IDchoices,
+                       AnnotationDbi::columns(get(annGenes_temp,
+                                                  envir = asNamespace(annGenes_temp)))
+        )
+      }
+      if ("Metabolites" %in% input$dataType){
+        IDchoices <- c(IDchoices,
+                       colnames(metaboliteIDmapping::metabolitesMapping))
+      }
+      
+      rv$IDchoices <- IDchoices
+    })
+    
+    
+    
+    observe({
+      if (length(input$dataType) > 1){
+        output$UI_TypeInColumn <- renderUI(NULL)
+      } else{
+        output$UI_TypeInColumn <- renderUI({
+          shinyWidgets::materialSwitch(
+            inputId = "TypeInColumn",
+            label = "Gene ID type in column",
+            value = FALSE
+          )
+        })
+      }
+    })
+    
+    observe({
+      if (length(input$dataType) > 1){
+        rv$TypeInColumn <- TRUE
+      } else{
+        rv$TypeInColumn <- input$TypeInColumn
+      }
+    })
+    
+    
+    observe({
+      output$UI_IDcolumn <- renderUI({
+        tagList(
+          h4(span("Feature ID column",
+                  tags$span(
+                    icon(
+                      name = "question-circle",
+                    ) 
+                  ) |>
+                    prompter::add_prompt(
+                      message = "Which column of the statistics table contains the gene/protein/metabolite IDs?",
+                      position = "right",
+                      rounded = TRUE,
+                      size = "large",
+                      type = "info")
+          )),
+          selectInput(inputId = "GeneID_column",
+                      label = NULL,
+                      choices = colnames(rv$statTable),
+                      multiple = FALSE)
+        )
+        
+      })
+    })
+    
+    
+    
+    observe({
+      req(length(rv$TypeInColumn)>0)
+      output$UI_TypeOrColumn <- renderUI({
+        if (rv$TypeInColumn){
+          tagList(
+            h4(span("Feature ID type column",
+                    tags$span(
+                      icon(
+                        name = "question-circle",
+                      ) 
+                    ) |>
+                      prompter::add_prompt(
+                        message = "Which column of the statistics table contains the gene/protein/metabolite ID types?",
+                        position = "right",
+                        rounded = TRUE,
+                        size = "large",
+                        type = "info")
+            )),
+            selectInput(inputId = "GeneID_type_column",
+                        label = NULL,
+                        choices = colnames(rv$statTable),
+                        multiple = FALSE),
+          )
+          
+        } else{
+          req(rv$IDchoices)
+          tagList(
+            h4(span("Feature ID type",
+                    tags$span(
+                      icon(
+                        name = "question-circle",
+                      ) 
+                    ) |>
+                      prompter::add_prompt(
+                        message = "Which feature ID type is used?",
+                        position = "right",
+                        rounded = TRUE,
+                        size = "large",
+                        type = "info")
+            )),
+            selectInput(inputId = "GeneID_type",
+                        label = NULL,
+                        choices = rv$IDchoices,
+                        multiple = FALSE,
+                        selected = whichID(rv$statTable[,input$GeneID_column])),
+          )
+        }
+      })
+    })
+    
+    
+    
+    observe({
+      output$UI_addColumns <- renderUI({
+        tagList(
+          
           h4(span("Remove/add columns",
                   tags$span(
                     icon(
@@ -254,14 +351,14 @@ server <- function(input, output, session){
             height = "100px"
           ),
           h5(
-          actionLink(inputId = "addColumn_example1", 
-                     label = "Example 1"),
-          strong(" | "),
-          actionLink(inputId = "addColumn_example2", 
-                     label = "Example 2"),
-          strong(" | "),
-          actionLink(inputId = "addColumn_info", 
-                     label = "How to make rules?")
+            actionLink(inputId = "addColumn_example1", 
+                       label = "Example 1"),
+            strong(" | "),
+            actionLink(inputId = "addColumn_example2", 
+                       label = "Example 2"),
+            strong(" | "),
+            actionLink(inputId = "addColumn_info", 
+                       label = "How to make rules?")
           ),
           br(),
           br(),
@@ -473,13 +570,14 @@ server <- function(input, output, session){
     observeEvent(input$details_next, {
       
       rv$GeneID_column <- input$GeneID_column
-      if (input$TypeInColumn){
+      if (rv$TypeInColumn){
         rv$GeneID_type <-  rv$statTable[,input$GeneID_type_column]
       } else{
         rv$GeneID_type <-  input$GeneID_type
         
       }
       rv$organism <- input$organism
+      rv$dataType <- input$dataType
       
       shinybusy::show_modal_spinner(text = "Loading...",
                                     color="#2c3e50")
@@ -500,18 +598,6 @@ server <- function(input, output, session){
         
         rm(PathwayInfo_WP)
         rm(PathwayInfo_KEGG)
-        
-        # Load annotation package
-        pkg <- switch(rv$organism,
-                      "Homo sapiens" = "org.Hs.eg.db",
-                      "Bos taurus" = "org.Bt.eg.db",
-                      "Caenorhabditis elegans" = "org.Ce.eg.db",
-                      "Mus musculus" = "org.Mm.eg.db",
-                      "Rattus norvegicus" = "org.Rn.eg.db"
-        )
-        if (!requireNamespace(pkg, quietly = TRUE)){
-          BiocManager::install(pkg, ask = FALSE)
-        }
         
         # Show next tab
         showTab("navbar", target = "panel3")
@@ -618,13 +704,30 @@ server <- function(input, output, session){
       req(input$network_ok+1)
       file_dir <- tempdir()
       
-      pkg <- switch(rv$organism,
-                    "Homo sapiens" = "org.Hs.eg.db",
-                    "Bos taurus" = "org.Bt.eg.db",
-                    "Caenorhabditis elegans" = "org.Ce.eg.db",
-                    "Mus musculus" = "org.Mm.eg.db",
-                    "Rattus norvegicus" = "org.Rn.eg.db"
-      )
+      
+      # Make gene/metabolite annotation
+      if ("Genes/proteins" %in% rv$dataType){
+        annGenes <- switch(rv$organism,
+                           "Homo sapiens" = "org.Hs.eg.db",
+                           "Bos taurus" = "org.Bt.eg.db",
+                           "Caenorhabditis elegans" = "org.Ce.eg.db",
+                           "Mus musculus" = "org.Mm.eg.db",
+                           "Rattus norvegicus" = "org.Rn.eg.db"
+        )
+        # Load annotation package
+        if (!requireNamespace(annGenes, quietly = TRUE)){
+          BiocManager::install(annGenes, ask = FALSE)
+        }
+      }else{
+        annGenes <- NULL
+      }
+      
+      if ("Metabolites" %in% rv$dataType){
+        annMetabolites <- metaboliteIDmapping::metabolitesMapping 
+      }else{
+        annMetabolites <- NULL
+        
+      }
       
       tryCatch({
         set.seed(123)
@@ -636,11 +739,15 @@ server <- function(input, output, session){
         }
         if (input$collection == "WikiPathways"){
           if (!input$asNetwork){
-            rv$outPath <- drawGPML_app(
-              infile = rWikiPathways::getPathway(rv$pathway),
+            bfc <- BiocFileCache::BiocFileCache()
+            rv$outPath <- drawGPML(
+              infile = BiocFileCache::bfcrpath(bfc, 
+                                               paste0("https://www.wikipathways.org/wikipathways-assets/pathways/",
+                                                      rv$pathway,"/", rv$pathway, ".gpml")),
               outdir = file_dir,
               outname = "pathway.svg",
-              annPkg = pkg,
+              annGenes = annGenes,
+              annMetabolites = annMetabolites,
               inputDB = rv$GeneID_type,
               geneIDs = rv$statTable[,rv$GeneID_column],
               colorVar = temp,
@@ -654,11 +761,15 @@ server <- function(input, output, session){
             )
           }
           if (input$asNetwork){
+            bfc <- BiocFileCache::BiocFileCache()
             rv$outPath <- GPML2Network(
-              infile = rWikiPathways::getPathway(rv$pathway),
+              infile = BiocFileCache::bfcrpath(bfc, 
+                                               paste0("https://www.wikipathways.org/wikipathways-assets/pathways/",
+                                                      rv$pathway,"/", rv$pathway, ".gpml")),
               outdir = file_dir,
               outname = "pathway.svg",
-              annPkg = pkg,
+              annGenes = annGenes,
+              annMetabolites = annMetabolites,
               inputDB = rv$GeneID_type,
               geneIDs = rv$statTable[,rv$GeneID_column],
               colorVar = temp,
@@ -679,11 +790,13 @@ server <- function(input, output, session){
         
         if (input$collection == "KEGG"){
           if (!input$asNetwork){
-            rv$outPath <- drawKGML_app(
-              id = rv$pathway,
+            bfc <- BiocFileCache::BiocFileCache()
+            rv$outPath <- drawKGML(
+              infile = BiocFileCache::bfcrpath(bfc, paste0("https://rest.kegg.jp/get/",rv$pathway,"/kgml")),
               outdir = file_dir,
               outname = "pathway.svg",
-              annPkg = pkg,
+              annGenes = annGenes,
+              annMetabolites = annMetabolites,
               inputDB = rv$GeneID_type,
               geneIDs = rv$statTable[,rv$GeneID_column],
               colorVar = temp,
@@ -697,11 +810,13 @@ server <- function(input, output, session){
             )
           }
           if (input$asNetwork){
+            bfc <- BiocFileCache::BiocFileCache()
             rv$outPath <- KGML2Network(
-              id = rv$pathway,
+              infile = BiocFileCache::bfcrpath(bfc, paste0("https://rest.kegg.jp/get/",rv$pathway,"/kgml")),
               outdir = file_dir,
               outname = "pathway.svg",
-              annPkg = pkg,
+              annGenes = annGenes,
+              annMetabolites = annMetabolites,
               inputDB = rv$GeneID_type,
               geneIDs = rv$statTable[,rv$GeneID_column],
               colorVar = temp,
@@ -723,11 +838,12 @@ server <- function(input, output, session){
         if (input$collection == "Custom"){
           if (tools::file_ext(rv$pathway) == "gpml"){
             if (!input$asNetwork){
-              rv$outPath <- drawGPML_app(
+              rv$outPath <- drawGPML(
                 infile = rv$pathway,
                 outdir = file_dir,
                 outname = "pathway.svg",
-                annPkg = pkg,
+                annGenes = annGenes,
+                annMetabolites = annMetabolites,
                 inputDB = rv$GeneID_type,
                 geneIDs = rv$statTable[,rv$GeneID_column],
                 colorVar = temp,
@@ -745,7 +861,8 @@ server <- function(input, output, session){
                 infile = rv$pathway,
                 outdir = file_dir,
                 outname = "pathway.svg",
-                annPkg = pkg,
+                annGenes = annGenes,
+                annMetabolites = annMetabolites,
                 inputDB = rv$GeneID_type,
                 geneIDs = rv$statTable[,rv$GeneID_column],
                 colorVar = temp,
@@ -765,11 +882,12 @@ server <- function(input, output, session){
           }
           if (tools::file_ext(rv$pathway) == "xml"){
             if (!input$asNetwork){
-              rv$outPath <- drawKGML_app(
-                id = rv$pathway,
+              rv$outPath <- drawKGML(
+                infile = rv$pathway,
                 outdir = file_dir,
                 outname = "pathway.svg",
-                annPkg = pkg,
+                annGenes = annGenes,
+                annMetabolites = annMetabolites,
                 inputDB = rv$GeneID_type,
                 geneIDs = rv$statTable[,rv$GeneID_column],
                 colorVar = temp,
@@ -784,10 +902,11 @@ server <- function(input, output, session){
             }
             if (input$asNetwork){
               rv$outPath <- KGML2Network(
-                id = rv$pathway,
+                infile = rv$pathway,
                 outdir = file_dir,
                 outname = "pathway.svg",
-                annPkg = pkg,
+                annGenes = annGenes,
+                annMetablites = annMetabolites,
                 inputDB = rv$GeneID_type,
                 geneIDs = rv$statTable[,rv$GeneID_column],
                 colorVar = temp,
@@ -805,13 +924,13 @@ server <- function(input, output, session){
               )
             }
           } 
-
+          
         }
       }, error = function(cond){
         outPath <- list()
         
-        outPath[["Pathway"]] <- "Data/nullfile.svg" 
-        outPath[["Legend"]] <- "Data/nullfile.svg" 
+        outPath[["Pathway"]] <- "Data/nullfile.svg"
+        outPath[["Legend"]] <- "Data/nullfile.svg"
         outPath[["NodeTable"]] <- NULL
         rv$outPath <- outPath
       })
@@ -833,9 +952,9 @@ server <- function(input, output, session){
         req(sum(input$asNetwork))
         req(input$network_ok+1)
         
-        svg <- read_xml(rv$outPath[["Pathway"]])
-        width <- as.numeric(gsub("[^0-9.]", "", xml_attr(svg, "width")))
-        height <- as.numeric(gsub("[^0-9.]", "", xml_attr(svg, "height")))
+        svg <- xml2::read_xml(rv$outPath[["Pathway"]])
+        width <- as.numeric(gsub("[^0-9.]", "", xml2::xml_attr(svg, "width")))
+        height <- as.numeric(gsub("[^0-9.]", "", xml2::xml_attr(svg, "height")))
         
         if (width/height > 0.7){
           w <- paste0(input$pathway_width, "%")
@@ -1177,8 +1296,8 @@ server <- function(input, output, session){
       
       # Color list
       if (length(setdiff(input$color_column, colnames(rv$statTable)))==0){
-        rv$colorList <- defaultColorList_app(rv$statTable[,input$color_column],
-                                             ColorNames = input$color_column)
+        rv$colorList <- defaultColorList(rv$statTable[,input$color_column],
+                                         ColorNames = input$color_column)
       }
       
       rv$NAvalue <- "#F0F0F0"
