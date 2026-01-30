@@ -40,6 +40,21 @@ server <- function(input, output, session){
                        selected = "panel4")
     })
     
+    # Session info
+    output$downloadSessionInfo <- downloadHandler(
+      filename = "sessionInfo.txt",
+      content = function(file){
+        writeLines(capture.output(sessionInfo()), file)
+      }
+    )
+    
+    observe({
+      req(sum(input$refreshSessionInfo+1))
+      output$session_info <- renderPrint({
+        sessionInfo()
+      })
+    })
+
     
     # Make list for reactive values
     rv <- reactiveValues()
@@ -125,12 +140,12 @@ server <- function(input, output, session){
                       size = "large",
                       type = "info")
           )),
-          checkboxGroupInput( 
+          shinyWidgets::prettyRadioButtons(
             inputId = "dataType",
             label = NULL,
-            choices = c("Genes/proteins", "Metabolites"),
+            choices = c("Genes/proteins", "Metabolites", "Both"),
             selected = "Genes/proteins",
-            inline = TRUE
+            status = "warning"
           ),
           
           h4(span("Organism",
@@ -175,8 +190,12 @@ server <- function(input, output, session){
         )
       }
       if ("Metabolites" %in% input$dataType){
+        shinybusy::show_modal_spinner(text = "Loading metabolite database...",
+                                      color="#2c3e50")
         IDchoices <- c(IDchoices,
                        colnames(metaboliteIDmapping::metabolitesMapping))
+        
+        shinybusy::remove_modal_spinner()
       }
       
       rv$IDchoices <- IDchoices
@@ -185,7 +204,8 @@ server <- function(input, output, session){
     
     
     observe({
-      if (length(input$dataType) > 1){
+      req(input$dataType)
+      if (input$dataType == "Both"){
         output$UI_TypeInColumn <- renderUI(NULL)
       } else{
         output$UI_TypeInColumn <- renderUI({
@@ -199,7 +219,8 @@ server <- function(input, output, session){
     })
     
     observe({
-      if (length(input$dataType) > 1){
+      req(input$dataType)
+      if (input$dataType == "Both"){
         rv$TypeInColumn <- TRUE
       } else{
         rv$TypeInColumn <- input$TypeInColumn
@@ -700,13 +721,14 @@ server <- function(input, output, session){
       req(input$collection)
       req(rv$pathway)
       req(rv$colorList)
-      req(sum(input$asNetwork))
+      req(length(input$asNetwork))
       req(input$network_ok+1)
       file_dir <- tempdir()
       
       
       # Make gene/metabolite annotation
-      if ("Genes/proteins" %in% rv$dataType){
+      if ((rv$dataType == "Genes/proteins") |
+          (rv$dataType == "Both")){
         annGenes <- switch(rv$organism,
                            "Homo sapiens" = "org.Hs.eg.db",
                            "Bos taurus" = "org.Bt.eg.db",
@@ -714,15 +736,17 @@ server <- function(input, output, session){
                            "Mus musculus" = "org.Mm.eg.db",
                            "Rattus norvegicus" = "org.Rn.eg.db"
         )
+        
         # Load annotation package
-        if (!requireNamespace(annGenes, quietly = TRUE)){
-          BiocManager::install(annGenes, ask = FALSE)
-        }
+        # if (!requireNamespace(annGenes, quietly = TRUE)){
+        #   BiocManager::install(annGenes, ask = FALSE)
+        # }
       }else{
         annGenes <- NULL
       }
       
-      if ("Metabolites" %in% rv$dataType){
+      if ((rv$dataType == "Metabolites") |
+          (rv$dataType == "Both")){
         annMetabolites <- metaboliteIDmapping::metabolitesMapping 
       }else{
         annMetabolites <- NULL
@@ -745,7 +769,7 @@ server <- function(input, output, session){
                                                paste0("https://www.wikipathways.org/wikipathways-assets/pathways/",
                                                       rv$pathway,"/", rv$pathway, ".gpml")),
               outdir = file_dir,
-              outname = "pathway.svg",
+              outname = "WPpathway.svg",
               annGenes = annGenes,
               annMetabolites = annMetabolites,
               inputDB = rv$GeneID_type,
@@ -767,7 +791,7 @@ server <- function(input, output, session){
                                                paste0("https://www.wikipathways.org/wikipathways-assets/pathways/",
                                                       rv$pathway,"/", rv$pathway, ".gpml")),
               outdir = file_dir,
-              outname = "pathway.svg",
+              outname = "WPnetwork.svg",
               annGenes = annGenes,
               annMetabolites = annMetabolites,
               inputDB = rv$GeneID_type,
@@ -794,7 +818,7 @@ server <- function(input, output, session){
             rv$outPath <- drawKGML(
               infile = BiocFileCache::bfcrpath(bfc, paste0("https://rest.kegg.jp/get/",rv$pathway,"/kgml")),
               outdir = file_dir,
-              outname = "pathway.svg",
+              outname = "KEGGpathway.svg",
               annGenes = annGenes,
               annMetabolites = annMetabolites,
               inputDB = rv$GeneID_type,
@@ -814,7 +838,7 @@ server <- function(input, output, session){
             rv$outPath <- KGML2Network(
               infile = BiocFileCache::bfcrpath(bfc, paste0("https://rest.kegg.jp/get/",rv$pathway,"/kgml")),
               outdir = file_dir,
-              outname = "pathway.svg",
+              outname = "KEGGnetwork.svg",
               annGenes = annGenes,
               annMetabolites = annMetabolites,
               inputDB = rv$GeneID_type,
@@ -841,7 +865,7 @@ server <- function(input, output, session){
               rv$outPath <- drawGPML(
                 infile = rv$pathway,
                 outdir = file_dir,
-                outname = "pathway.svg",
+                outname = "customWPpathway.svg",
                 annGenes = annGenes,
                 annMetabolites = annMetabolites,
                 inputDB = rv$GeneID_type,
@@ -860,7 +884,7 @@ server <- function(input, output, session){
               rv$outPath <- GPML2Network(
                 infile = rv$pathway,
                 outdir = file_dir,
-                outname = "pathway.svg",
+                outname = "custumnetwork.svg",
                 annGenes = annGenes,
                 annMetabolites = annMetabolites,
                 inputDB = rv$GeneID_type,
@@ -885,7 +909,7 @@ server <- function(input, output, session){
               rv$outPath <- drawKGML(
                 infile = rv$pathway,
                 outdir = file_dir,
-                outname = "pathway.svg",
+                outname = "customKEGGpathway.svg",
                 annGenes = annGenes,
                 annMetabolites = annMetabolites,
                 inputDB = rv$GeneID_type,
@@ -904,7 +928,7 @@ server <- function(input, output, session){
               rv$outPath <- KGML2Network(
                 infile = rv$pathway,
                 outdir = file_dir,
-                outname = "pathway.svg",
+                outname = "customKEGGnetwork.svg",
                 annGenes = annGenes,
                 annMetablites = annMetabolites,
                 inputDB = rv$GeneID_type,
@@ -928,7 +952,7 @@ server <- function(input, output, session){
         }
       }, error = function(cond){
         outPath <- list()
-        
+
         outPath[["Pathway"]] <- "Data/nullfile.svg"
         outPath[["Legend"]] <- "Data/nullfile.svg"
         outPath[["NodeTable"]] <- NULL
@@ -968,10 +992,6 @@ server <- function(input, output, session){
              width = w,
              height = h,
              alt = "Pathway diagram")
-        
-        
-        
-        
       }, deleteFile = FALSE)
       
     })
@@ -1045,12 +1065,13 @@ server <- function(input, output, session){
       showModal(modalDialog(
         fluidPage(
           h4("What do you want to save?"),
-          checkboxGroupInput(
+          shinyWidgets::prettyCheckboxGroup(
             inputId = "downloads",
             label = NULL, 
             choices = c("Pathway", "Legend", "Node table"),
             selected = "Pathway",
-            inline = TRUE
+            inline = TRUE,
+            status = "warning"
           ),
           hr(),
           downloadButton('download_pathway', 
@@ -1099,7 +1120,7 @@ server <- function(input, output, session){
         }
         if (length(downloads) > 1){
           output$download_pathway <- downloadHandler(
-            filename = "shinyPath.zip",
+            filename = "PinPath.zip",
             content = function(file){
               setwd(dirname(download_files))
               zip(zipfile = file, files = basename(download_files))

@@ -75,7 +75,7 @@ ui <- tagList(
                                padding-bottom:10px;
                               padding-top:10px",
                               height = 50)),
-              windowTitle = "shinyPath",
+              windowTitle = "PinPath",
               id = "navbar",
               
               ###########################################################################
@@ -157,7 +157,7 @@ ui <- tagList(
                                 #br(),
                                 h6(align = "left", 
                                    style = "color:lightgrey",
-                                   "PinPath v0.1.0 | CC-BY 4.0"),
+                                   "PinPath v0.1.0 | MIT license"),
                                 
                          ) # EO column
                        ), # EO fluidRow
@@ -167,10 +167,10 @@ ui <- tagList(
               
               ###########################################################################
               
-              # Gene info
+              # Data info
               
               ###########################################################################
-              tabPanel("Gene info", value = "panel2", 
+              tabPanel("Data info", value = "panel2", 
                        icon = icon("plus"),
                        sidebarPanel(width = 3,
                                     uiOutput("UI_dataType"),
@@ -342,11 +342,31 @@ ui <- tagList(
               tabPanel("Information", value = "panel4", 
                        icon = icon("circle-info"),
                        mainPanel(
-                         includeMarkdown("www/info.md")
+                         navlistPanel(
+                           tabPanel("About PinPath",
+                                    includeMarkdown("www/info.md")
+                                    
+                           ),
+                           tabPanel("Adding columns to data",
+                                    includeMarkdown("www/addingColumns.md")),
+                           
+                           tabPanel("Session information",
+                                    h1(strong("Session information")),
+                                    downloadButton("downloadSessionInfo", 
+                                                   "Download"),
+                                    actionButton("refreshSessionInfo",
+                                                 label = NULL,
+                                                 icon = icon("arrows-rotate")),
+                                    br(),
+                                    br(),
+                                    verbatimTextOutput("session_info")
+                           )
+                         )
+                         
                        )
               )
               
-            
-  ) # EO navbarPage
-) # EO fluidPage
+              
+            ) # EO navbarPage
+  ) # EO fluidPage
 ) # EO tagList

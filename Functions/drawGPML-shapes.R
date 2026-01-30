@@ -560,9 +560,7 @@
       ymin <- centerY - 0.5*newHeight
       ymax <- centerY + 0.5*newHeight
       
-      img <- magick::image_read(system.file("pathwayElements",
-                                            "Mitochondria.png", 
-                                            package="rWikiPathways"))
+      img <- magick::image_read("pathwayElements/Mitochondria.png")
       img <- magick::image_rotate(img, (rotation*180)/pi)
       img <-  magick::image_transparent(img, color = "white")
       graphics::rasterImage(img, xmin, -ymax, xmax, -ymin)
@@ -579,9 +577,7 @@
       ymin <- centerY - 0.5*newHeight
       ymax <- centerY + 0.5*newHeight
       
-      img <- magick::image_read(system.file("pathwayElements",
-                                            "SR.png", 
-                                            package="rWikiPathways"))
+      img <- magick::image_read("pathwayElements/SR.png")
       img <- magick::image_rotate(img, (rotation*180)/pi)
       img <-  magick::image_transparent(img, color = "white")
       graphics::rasterImage(img, xmin, -ymax, xmax, -ymin)
@@ -596,9 +592,7 @@
       ymin <- centerY - 0.5*newHeight
       ymax <- centerY + 0.5*newHeight
       
-      img <- magick::image_read(system.file("pathwayElements",
-                                            "ER.png", 
-                                            package="rWikiPathways"))
+      img <- magick::image_read("pathwayElements/ER.png")
       img <- magick::image_rotate(img, (rotation*180)/pi)
       img <-  magick::image_transparent(img, color = "white")
       graphics::rasterImage(img, xmin, -ymax, xmax, -ymin)
@@ -614,9 +608,7 @@
       ymin <- centerY - 0.5*newHeight
       ymax <- centerY + 0.5*newHeight
       
-      img <- magick::image_read(system.file("pathwayElements",
-                                            "Golgi.png", 
-                                            package="rWikiPathways"))
+      img <- magick::image_read("pathwayElements/Golgi.png")
       img <- magick::image_rotate(img, (rotation*180)/pi)
       img <-  magick::image_transparent(img, color = "white")
       graphics::rasterImage(img, xmin, -ymax, xmax, -ymin)

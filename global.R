@@ -33,18 +33,19 @@ library(rWikiPathways)
 library(enrichplot)
 library(clusterProfiler)
 library(BiocFileCache)
-library(metaboliteIDmapping)
+#library(metaboliteIDmapping)
 
 #******************************************************************************#
 # Custom functions
 #******************************************************************************#
 
 whichID <- function(x){
+  x <- x[!is.na(x)]
   IDtype <- "SYMBOL"
-  if (sum(substr(x,1,3) == "ENS") > 0.5*length(x)){
+  if (sum(substr(x,1,3) == "ENS", na.rm = TRUE) > 0.5*length(x)){
     IDtype <- "ENSEMBL"
   }
-  if (sum(!is.na(as.numeric(x))) > 0.5*length(x)){
+  if (sum(vapply(x,FUN = is.numeric, FUN.VALUE= logical(1)), na.rm = TRUE) > 0.5*length(x)){
     IDtype <- "ENTREZID"
   }
   return(IDtype)
