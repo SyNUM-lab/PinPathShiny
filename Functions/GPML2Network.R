@@ -364,7 +364,7 @@ GPML2Network <- function(infile,
     edges_df <- edges_df_temp
     edges_df$type <- "node_node"
   }
-
+  
   
   # Filter edges for nodes
   edges_df$from <- replace(stats::setNames(edges_df$from,edges_df$from), 
@@ -385,7 +385,7 @@ GPML2Network <- function(infile,
     NAdf <- nodes_df[is.na(nodes_df$Scale),]
     nonNAdf <- nodes_df[!is.na(nodes_df$Scale),]
     
-    # Add each scale as a seperate column
+    # Add each scale as a separate column
     scales <- unique(nodes_df$Scale)
     scales <- scales[!is.na(scales)]
     for (s in scales){
@@ -401,7 +401,16 @@ GPML2Network <- function(infile,
     }
     
     # Remove duplicated nodes
+    dupIds <- sum(duplicated(nodes_df_split$name[!duplicated(
+      nodes_df_split[,9:ncol(nodes_df_split)])]))
+    if (dupIds > 0){
+      warning("There duplicated feature IDs. The GPML2Network function only 
+              plots the values associated with the first feature ID.")
+    }
+    
     nodes_df_split <- nodes_df_split[!duplicated(nodes_df_split$name),]
+    
+
   }
   
   #***********************************************************************#
@@ -558,7 +567,8 @@ GPML2Network <- function(infile,
     outputTable <- outputTable |>
       tidyr::pivot_wider(
         names_from = "Scale Name",
-        values_from = "Scale Value"
+        values_from = "Scale Value",
+        values_fn = list
       )
     
     # Save node table in output list
@@ -581,7 +591,7 @@ GPML2Network <- function(infile,
       "Description" = gpml[
         which(names(gpml) == "Comment")][
           which.max(nchar(gpml[which(names(gpml) == "Comment")]))][[1]][[1]]
-      )
+    )
   }else{
     outputList[["Information"]] <- NA
   }

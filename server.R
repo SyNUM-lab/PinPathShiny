@@ -174,8 +174,9 @@ server <- function(input, output, session){
     })
     
     observe({
+      req(input$dataType)
       IDchoices <- NULL
-      if ("Genes/proteins" %in% input$dataType){
+      if ((input$dataType == "Genes/proteins")| (input$dataType == "Both")){
         annGenes_temp <- switch(input$organism,
                                 "Homo sapiens" = "org.Hs.eg.db",
                                 "Bos taurus" = "org.Bt.eg.db",
@@ -189,7 +190,7 @@ server <- function(input, output, session){
                                                   envir = asNamespace(annGenes_temp)))
         )
       }
-      if ("Metabolites" %in% input$dataType){
+      if ((input$dataType == "Metabolites") | (input$dataType == "Both")){
         shinybusy::show_modal_spinner(text = "Loading metabolite database...",
                                       color="#2c3e50")
         IDchoices <- c(IDchoices,
