@@ -1,7 +1,7 @@
 Package: PinPathShiny
 Type: Package
 Title: PinPathShiny - R Shiny app for Pathway Visualization
-Version: 0.99.0
+Version: 0.99.3
 Date: 2026-03-12
 Authors@R: c(person("Jarno", "Koetsier", role = c("aut","cre"),
                      email = "jarno.koetsier@gmail.com",
@@ -56,13 +56,12 @@ Suggests:
     org.Hs.eg.db,
     metaboliteIDmapping
 Depends:
-    R (>= 4.5.0)
+    R (>= 4.6.0)
 Encoding: UTF-8
 Description: With PinPathShiny, you can visualize omics data onto pathways diagrams from WikiPathways and KEGG in an interactive R Shiny environment.
 License: MIT + file LICENSE
 URL: https://github.com/SyNUM-lab/PinPath_Shiny
 BugReports: https://github.com/SyNUM-lab/PinPath_Shiny/issues
-LazyLoad: yes
 biocViews: Pathways, Visualization, GraphAndNetwork, KEGG
 NeedsCompilation: no
 VignetteBuilder: knitr
