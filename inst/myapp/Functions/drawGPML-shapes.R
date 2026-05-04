@@ -551,7 +551,7 @@
     ymin <- centerY - 0.5*newHeight
     ymax <- centerY + 0.5*newHeight
 
-    img <- magick::image_read(system.file(
+    img <- magick::image_read(file.path(
         "pathwayElements",
         "Mitochondria.png"))
     img <- magick::image_rotate(img, (rotation*180)/pi)
@@ -568,7 +568,7 @@
     ymin <- centerY - 0.5*newHeight
     ymax <- centerY + 0.5*newHeight
 
-    img <- magick::image_read(system.file(
+    img <- magick::image_read(file.path(
         "pathwayElements",
         "SR.png"))
     img <- magick::image_rotate(img, (rotation*180)/pi)
@@ -584,7 +584,7 @@
     ymin <- centerY - 0.5*newHeight
     ymax <- centerY + 0.5*newHeight
 
-    img <- magick::image_read(system.file(
+    img <- magick::image_read(file.path(
         "pathwayElements",
         "ER.png"))
     img <- magick::image_rotate(img, (rotation*180)/pi)
@@ -601,7 +601,7 @@
     ymin <- centerY - 0.5*newHeight
     ymax <- centerY + 0.5*newHeight
 
-    img <- magick::image_read(system.file(
+    img <- magick::image_read(file.path(
         "pathwayElements",
         "Golgi.png"))
     img <- magick::image_rotate(img, (rotation*180)/pi)

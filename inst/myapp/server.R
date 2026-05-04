@@ -754,7 +754,7 @@ server <- function(input, output, session){
                 
             }
             
-            #tryCatch({
+            tryCatch({
                 set.seed(123)
                 if (length(input$color_column) == 1){
                     temp <- data.frame(rv$statTable[,input$color_column])
@@ -951,14 +951,14 @@ server <- function(input, output, session){
                     } 
                     
                 }
-            # }, error = function(cond){
-            #     outPath <- list()
-            # 
-            #     outPath[["Pathway"]] <- "Data/nullfile.svg"
-            #     outPath[["Legend"]] <- "Data/nullfile.svg"
-            #     outPath[["NodeTable"]] <- NULL
-            #     rv$outPath <- outPath
-            # })
+            }, error = function(cond){
+                outPath <- list()
+
+                outPath[["Pathway"]] <- "Data/nullfile.svg"
+                outPath[["Legend"]] <- "Data/nullfile.svg"
+                outPath[["NodeTable"]] <- NULL
+                rv$outPath <- outPath
+            })
         })
         
         #**************************************************************************#

@@ -21,5 +21,5 @@ remotes::install_github("SyNUM-lab/PinPath_Shiny")
 ## Run the app
 Use the following R code to run the Shiny app:
 ```r
-PinPath_Shiny::runPinPath() 
+PinPathShiny::runPinPath() 
 ```
