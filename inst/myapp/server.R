@@ -17,6 +17,16 @@ server <- function(input, output, session){
     hideTab("navbar", target = "panel2")
     hideTab("navbar", target = "panel3")
     
+    observe({
+        versionMessage <- reactive({tryCatch({
+            message <- paste0("<h6 style='color:lightgrey' align='left'>PinPath v", packageVersion("PinPath")," | MIT license</h6>")
+            return(message)
+        }, error = function(cond){
+            return("<h6 style='color:lightgrey' align='left'>PinPath v0.99.4 | MIT license</h6>")
+        })})
+        
+        output$versionMessage <- renderUI({HTML(versionMessage())})
+    })
     
     
     observe({

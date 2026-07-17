@@ -154,10 +154,7 @@ ui <- tagList(
                                 
                                 # Line breaks
                                 br(),
-                                #br(),
-                                h6(align = "left", 
-                                   style = "color:lightgrey",
-                                   "PinPath v0.99.0 | MIT license"),
+                                uiOutput("versionMessage"),
                                 
                          ) # EO column
                        ), # EO fluidRow
