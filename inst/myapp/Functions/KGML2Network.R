@@ -38,6 +38,7 @@
 #'   Should unconnected (isolated) nodes be shown in the network?
 #' @param alpha (optional) Transparency of the nodes.
 #' @param nodeSize (optional) Size of the nodes.
+#' @param fontSize (optional) Font size of the text in the nodes.
 #' @param legend (optional) Logical (TRUE or FALSE).
 #'   Should the legend be plotted?
 #' @param nodeTable (optional) Logical (TRUE or FALSE).
@@ -81,8 +82,8 @@ KGML2Network <- function(
         infile,outdir=getwd(),outname=NULL,featureIDs=NULL,
         colorVar=NULL,annGenes=NULL,annMetabolites=NULL,inputDB=NULL,
         colorNames=NULL,colorList=NULL,NAvalue="#F0F0F0",layout="nicely",
-        unconnectedNodes=FALSE,alpha=0.9,nodeSize=1,legend=FALSE,
-        nodeTable=FALSE,pathInfo=FALSE,openFile=FALSE){
+        unconnectedNodes=FALSE,alpha=0.9,nodeSize=1,fontSize=2,
+        legend=FALSE,nodeTable=FALSE,pathInfo=FALSE,openFile=FALSE){
     # Read KGML file
     kgml <- XML::xmlToList(XML::xmlParse(infile))
 
@@ -105,7 +106,7 @@ KGML2Network <- function(
     # Make network
     g_plot <- .makeNetwork_KGML(
         relations_df, entries_df_split, unconnectedNodes, layout, nodeSize,
-        alpha)
+        fontSize, alpha)
     outfile <- .exportNetwork(g_plot, outdir, outname, nodeSize)
     outputList <- list()
     outputList[["Pathway"]] <- outfile
@@ -167,13 +168,12 @@ KGML2Network <- function(
             annMetabolites = data.frame(annMetabolites),
             inputDB = inputDB,
             colorList = colorList,
-            NAvalue = NAvalue)
+            NAvalue = NAvalue, multiMapping = TRUE)
 
         # Add colors to nodes
         entries_df <- dplyr::left_join(
-            entries_df,
-            colors_df[, c("GraphId1", "ColorValue","Scale")],
-            by = c("GraphId1" = "GraphId1"))
+            entries_df,colors_df[, c("GraphId1", "ColorValue","Scale")],
+            by = c("GraphId1" = "GraphId1"), relationship = "many-to-many")
     } else{
         colors_df <- NULL
         entries_df$ColorValue <- "white"
@@ -181,7 +181,9 @@ KGML2Network <- function(
     }
 
     # Change name
-    entries_df$name <- entries_df$ID
+    entries_df$name <- unlist(lapply(stringr::str_split(
+        entries_df$Names,","), function(x){
+            if(length(x) > 1){paste0(x[1], ",...")}else{x[1]}}))
     entries_df <- entries_df[, c("name", colnames(entries_df)[
         colnames(entries_df) != "name"])]
     entries_df <- entries_df[!is.na(entries_df$name),]
@@ -222,6 +224,7 @@ KGML2Network <- function(
 
 
 .splitEntries_network <- function(entries_df){
+
     # Collect NA and non-NA scales
     NAdf <- entries_df[is.na(entries_df$Scale),]
     nonNAdf <- entries_df[!is.na(entries_df$Scale),]
@@ -253,9 +256,9 @@ KGML2Network <- function(
                 !BiocGenerics::duplicated(entries_df_split[
                     ,(ncol(entries_df_split)-1):ncol(entries_df_split)
                 ])]))
-        if (dupIds > 0){warning(
-            "There duplicated feature IDs. The KGML2Network function
-                only plots the values associated with the first feature ID.")}
+        if (dupIds > 0){Biobase::note(
+            "There are duplicated feature IDs. The KGML2Network function
+only plots the values associated with the first feature ID.")}
     }
 
     if (length(scales) == 0){
@@ -270,7 +273,7 @@ KGML2Network <- function(
 
 .makeNetwork_KGML <- function(
         relations_df, entries_df_split,
-        unconnectedNodes, layout, nodeSize, alpha){
+        unconnectedNodes, layout, nodeSize, fontSize, alpha){
     # Make graph
     graph <- igraph::graph_from_data_frame(
         relations_df,
@@ -304,10 +307,10 @@ KGML2Network <- function(
     # Finalize network
     g_plot <- g_plot +
         .geom_node_split(
-            linewidth = 0.3,
-            alpha = 0, color = "lightgrey",
+            linewidth = 0.3, alpha = 0, color = "lightgrey",
             nCol = 1, iCol = 1, nodeSize = nodeSize) +
-        ggraph::geom_node_text(ggplot2::aes(label = .data$name), size = 2) +
+        ggraph::geom_node_text(
+            ggplot2::aes(label = .data$name), size = fontSize) +
         ggplot2::theme_void() +
         ggplot2::theme(legend.position = "none")
     return(g_plot)

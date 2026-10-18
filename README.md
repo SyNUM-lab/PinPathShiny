@@ -7,7 +7,7 @@ As long as your data can be linked to genes, proteins, or metabolites, you can v
 Please visit our website for more information: [SyNUM-lab.github.io/PinPath-web](https://synum-lab.github.io/PinPath-web/)
 
 ## Installation
-Use the following R code to install the development version of PinPath:
+Use the following R code to install PinPathShiny:
 
 ```r
 # install "remotes" package

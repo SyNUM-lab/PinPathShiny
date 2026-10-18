@@ -11,7 +11,7 @@
 #'   "svg","png",and "pdf" file extensions are accepted. If no file extension is
 #'   specified, the pathway and legend image will be generated in .svg format.
 #'   The legend file gets the "legend_" prefix.
-#' @param featureIDs (optional) \code{character} vector of gene IDs.
+#' @param featureIDs (optional) \code{character} vector of feature IDs.
 #' @param colorVar (optional) \code{vector} or \code{data.frame} for
 #'   coloring the nodes in the pathway. This can be for instance a
 #'   \code{data.frame} with the log2FCs and significance in the columns.
@@ -33,6 +33,10 @@
 #'   the nodes. An example can be generated using the \link{defaultColorList}
 #'   function.
 #' @param NAvalue (optional) Node color for \code{NA} values.
+#' @param multiMapping (optional) Logical (TRUE or FALSE).
+#' If a node has multiple feature IDs, should all associated
+#' values be plotted? If FALSE, only the value of the first
+#' feature ID is plotted.
 #' @param legend (optional) Logical (TRUE or FALSE). Should the legend be
 #'   plotted?
 #' @param nodeTable (optional) Logical (TRUE or FALSE). Should a node table
@@ -72,10 +76,10 @@
 #' @export
 
 drawKGML <- function(
-        infile,outdir = getwd(),outname = NULL,annGenes = NULL,
-        annMetabolites = NULL,inputDB = NULL,featureIDs = NULL,colorVar = NULL,
-        colorNames = NULL,colorList = NULL,NAvalue = "#F0F0F0",legend = FALSE,
-        nodeTable = FALSE,pathInfo = FALSE,openFile = FALSE){
+        infile,outdir=getwd(),outname=NULL,annGenes=NULL,annMetabolites=NULL,
+        inputDB=NULL,featureIDs=NULL,colorVar=NULL,colorNames=NULL,
+        colorList=NULL,NAvalue="#F0F0F0",multiMapping=TRUE,
+        legend=FALSE,nodeTable=FALSE,pathInfo=FALSE,openFile=FALSE){
     # Read and prepare GPML file
     kgml <- XML::xmlToList(XML::xmlParse(infile))
     # Set default values if necessary
@@ -93,10 +97,10 @@ drawKGML <- function(
         is.null(featureIDs) | is.null(colorVar) |
         (is.null(annGenes) & is.null(annMetabolites)) | is.null(inputDB))){
         colors_df <- .mapColors(
-            nodes_df = entries_df, featureIDs = featureIDs,
-            colorVar = colorVar, annGenes = annGenes,
-            annMetabolites = data.frame(annMetabolites), inputDB = inputDB,
-            colorList = colorList, NAvalue = NAvalue)}else{colors_df <- NULL}
+            nodes_df=entries_df, featureIDs=featureIDs,colorVar=colorVar,
+            annGenes = annGenes, annMetabolites = data.frame(annMetabolites),
+            inputDB = inputDB,colorList = colorList, NAvalue = NAvalue,
+            multiMapping = multiMapping)}else{colors_df <- NULL}
     # Draw pathway
     outfile <- .openFile(
         width = dim(magick::image_data(img))[2],
@@ -124,25 +128,40 @@ drawKGML <- function(
 .extractEntries <- function(dataEntries){
 
     entryFUN <- function(dataEntries){
-        data.frame(
-            Names = as.character(dataEntries$graphics["name"]),
-            ID = strsplit(
-                as.character(dataEntries$graphics["name"]),
-                ",\\s*")[[1]][1],
-            Database = "HGNC",
-            KEGG = as.character(dataEntries$.attrs["name"]),
-            GraphId1 = as.character(dataEntries$.attrs["id"]),
-            GraphType = as.character(dataEntries$.attrs["type"]),
-            FgColor = as.character(dataEntries$graphics["fgcolor"]),
-            BgColor = as.character(dataEntries$graphics["bgcolor"]),
-            NodeType = as.character(dataEntries$graphics["type"]),
-            CenterX = as.numeric(dataEntries$graphics["x"]),
-            CenterY = as.numeric(dataEntries$graphics["y"]),
-            Width = as.numeric(dataEntries$graphics["width"]),
-            Height = as.numeric(dataEntries$graphics["height"])
-        )
+        id <- unlist(stringr::str_split(dataEntries$.attrs["name"], " "))
+        df <- NULL
+        for (i in seq_along(id)){
+            temp <- data.frame(
+                Names = as.character(dataEntries$graphics["name"]),
+                ID = id[i],
+                Database = "Entrez Gene",
+                KEGG = as.character(dataEntries$.attrs["name"]),
+                GraphId1 = as.character(dataEntries$.attrs["id"]),
+                GraphType = as.character(dataEntries$.attrs["type"]),
+                FgColor = as.character(dataEntries$graphics["fgcolor"]),
+                BgColor = as.character(dataEntries$graphics["bgcolor"]),
+                NodeType = as.character(dataEntries$graphics["type"]),
+                CenterX = as.numeric(dataEntries$graphics["x"]),
+                CenterY = as.numeric(dataEntries$graphics["y"]),
+                Width = as.numeric(dataEntries$graphics["width"]),
+                Height = as.numeric(dataEntries$graphics["height"])
+            )
+            df <- rbind(df, temp)
+        }
+        return(df)
     }
     entries_df <- do.call(rbind, lapply(dataEntries, entryFUN))
+    ann <- KEGGREST::keggConv("ncbi-geneid", entries_df$ID)
+    if (length(ann) > 0){
+        ann <- data.frame(ID = names(ann),name = ann)
+        entries_df <- dplyr::left_join(
+            entries_df, ann, by = "ID", relationship = "many-to-many")
+        entries_df$name[
+            is.na(entries_df$name)] <- entries_df$ID[is.na(entries_df$name)]
+        entries_df$ID <- entries_df$name
+        entries_df <- entries_df[,-ncol(entries_df)]
+        entries_df$ID <- as.character(stringr::str_remove(entries_df$ID, ".*:"))
+    }
     # entries_df$ID<- iconv(entries_df$ID, from = 'UTF-8',
     # to = 'ASCII//TRANSLIT')
 

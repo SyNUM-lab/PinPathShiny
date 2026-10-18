@@ -22,7 +22,7 @@ server <- function(input, output, session){
             message <- paste0("<h6 style='color:lightgrey' align='left'>PinPath v", packageVersion("PinPath")," | MIT license</h6>")
             return(message)
         }, error = function(cond){
-            return("<h6 style='color:lightgrey' align='left'>PinPath v0.99.4 | MIT license</h6>")
+            return("<h6 style='color:lightgrey' align='left'>PinPath v0.99.6 | MIT license</h6>")
         })})
         
         output$versionMessage <- renderUI({HTML(versionMessage())})
@@ -838,6 +838,7 @@ server <- function(input, output, session){
                             colorNames = NULL,
                             colorList = rv$colorList,
                             NAvalue = rv$NAvalue,
+                            multiMapping = TRUE,
                             legend = TRUE,
                             nodeTable = TRUE,
                             pathInfo = TRUE,
@@ -885,6 +886,7 @@ server <- function(input, output, session){
                                 colorNames = NULL,
                                 colorList = rv$colorList,
                                 NAvalue = "#F0F0F0",
+                                multiMapping = TRUE,
                                 legend = TRUE,
                                 nodeTable = TRUE,
                                 pathInfo = TRUE,
@@ -929,6 +931,7 @@ server <- function(input, output, session){
                                 colorNames = NULL,
                                 colorList = rv$colorList,
                                 NAvalue = rv$NAvalue,
+                                multiMapping = TRUE,
                                 legend = TRUE,
                                 nodeTable = TRUE,
                                 pathInfo = TRUE,

@@ -48,7 +48,8 @@
         )
     }
     nodes_df <- do.call(rbind, lapply(dataNodes, nodeFUN))
-    #nodes_df <- nodes_df[!is.na(nodes_df$GraphId),]
+    nodes_df$GraphId[
+        is.na(nodes_df$GraphId)] <- nodes_df$GraphId1[is.na(nodes_df$GraphId)]
     return(nodes_df)
 }
 
@@ -161,6 +162,7 @@
 #'   Should unconnected (isolated) nodes be shown in the network?
 #' @param alpha (optional) Transparency of the nodes.
 #' @param nodeSize (optional) Size of the nodes.
+#' @param fontSize (optional) Font size of the text in the nodes.
 #' @param legend (optional) Logical (TRUE or FALSE).
 #'   Should the legend be plotted?
 #' @param nodeTable (optional) Logical (TRUE or FALSE).
@@ -202,8 +204,8 @@ GPML2Network <- function(
         infile,outdir=getwd(),outname=NULL,featureIDs=NULL,
         colorVar=NULL,annGenes=NULL,annMetabolites=NULL,inputDB=NULL,
         colorNames=NULL,colorList=NULL,NAvalue="#F0F0F0",layout="nicely",
-        unconnectedNodes=FALSE,alpha=0.9,nodeSize=1,legend=FALSE,
-        nodeTable=FALSE,pathInfo=FALSE,openFile=FALSE){
+        unconnectedNodes=FALSE,alpha=0.9,nodeSize=1,fontSize=2,
+        legend=FALSE,nodeTable=FALSE,pathInfo=FALSE,openFile=FALSE){
     # Read and prepare GPML file
     gpml <- XML::xmlToList(XML::xmlParse(xml2::read_xml(infile)))
     gpml_fil <- .prepareGPML(gpml)
@@ -230,12 +232,12 @@ GPML2Network <- function(
 
     # Make network
     g_plot <- .makeNetwork(
-        edges_df,nodes_df_split,unconnectedNodes,layout,nodeSize,alpha)
+        edges_df,nodes_df_split,unconnectedNodes,layout,nodeSize,fontSize,
+        alpha)
     outfile <- .exportNetwork(g_plot, outdir, outname, nodeSize)
     outputList <- list()
     outputList[["Pathway"]] <- outfile
     if (openFile) {.autoFileOpen(outputList[["Pathway"]])}
-
     # Return legend, node table, pathway information
     if (legend & !is.null(colorList)){
         outputList[["Legend"]] <- .exportLegend(outdir, outname, colorList)
@@ -290,7 +292,8 @@ GPML2Network <- function(
 }
 
 .makeNetwork <- function(
-        edges_df,nodes_df_split,unconnectedNodes,layout,nodeSize,alpha){
+        edges_df,nodes_df_split,unconnectedNodes,layout,nodeSize,fontSize,
+        alpha){
     # Make graph
     graph_full <- igraph::graph_from_data_frame(
         edges_df,
@@ -302,7 +305,6 @@ GPML2Network <- function(
         isolated <- which(igraph::degree(graph, mode = "total")==0)
         graph <- igraph::delete_vertices(graph, isolated)
     }
-
     # Make basis of network
     g_plot <- ggraph::ggraph(graph, layout = layout) +
         ggraph::geom_edge_link(ggplot2::aes(color = .data$type))
@@ -324,7 +326,7 @@ GPML2Network <- function(
             nCol = 1, iCol = 1, nodeSize = nodeSize) +
         ggraph::geom_node_text(
             ggplot2::aes(label = .data$name,alpha = .data$NodeType),
-            size = 2) +
+            size = fontSize) +
         ggplot2::scale_alpha_manual(values = stats::setNames(
             c(alpha,0),c("nonGroup", "Group"))) +
         ggraph::scale_edge_color_manual(values = stats::setNames(
@@ -350,7 +352,7 @@ GPML2Network <- function(
             nodes_df = .prepareNodes(dataNodes), featureIDs = featureIDs,
             colorVar = colorVar, annGenes = annGenes,
             annMetabolites = data.frame(annMetabolites), inputDB = inputDB,
-            colorList = colorList,NAvalue = NAvalue)
+            colorList = colorList,NAvalue = NAvalue,multiMapping=TRUE)
         # Add colors to nodes
         nodes_df <- dplyr::left_join(
             nodes_df_temp, colors_df[, c("GraphId1", "ColorValue","Scale")],
@@ -422,8 +424,8 @@ GPML2Network <- function(
         stats::setNames(edges_df$to,edges_df$to),
         nodes_df$GraphId, nodes_df$Label)[edges_df$to]
 
-    edges_df <- edges_df[(
-        edges_df$from %in% nodes_df$name) & (edges_df$to %in% nodes_df$name),]
+    edges_df <- unique(edges_df[(
+        edges_df$from %in% nodes_df$name) & (edges_df$to %in% nodes_df$name),])
 
     return(edges_df)
 }
@@ -459,10 +461,9 @@ GPML2Network <- function(
             BiocGenerics::duplicated(nodes_df_split$name[
                 !BiocGenerics::duplicated(
                     nodes_df_split[,9:ncol(nodes_df_split)])]))
-        if (dupIds > 0){
-            warning(
-                "There duplicated feature IDs. The GPML2Network function
-                only plots the values associated with the first feature ID.")
+        if (dupIds > 0){Biobase::note(
+            "There are duplicated feature IDs. The GPML2Network function
+only plots the values associated with the first feature ID.")
         }
     }
 

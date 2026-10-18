@@ -134,7 +134,7 @@ defaultColorList <- function(ColorVar, ColorNames = NULL){
             ScaleName = colnames(ColorVar)[c],
             ScaleType = "Qualitative",
             Color = stats::setNames(
-                grDevices::rainbow(length(unique(ColorVar[,c]))),
+                grDevices::rainbow(length(unique(ColorVar[,c])), s=.8,v=.7),
                 unique(ColorVar[,c]))
         )
     }

@@ -35,6 +35,10 @@
 #'   the nodes. An example can be generated using the \link{defaultColorList}
 #'   function.
 #' @param NAvalue (optional) Node color for \code{NA} values.
+#' @param multiMapping (optional) Logical (TRUE or FALSE).
+#' If a node has multiple feature IDs, should all associated
+#' values be plotted? If FALSE, only the value of the first
+#' feature ID is plotted.
 #' @param legend (optional) Logical (TRUE or FALSE). Should the legend be
 #'   plotted?
 #' @param nodeTable (optional) Logical (TRUE or FALSE). Should a node table be
@@ -70,10 +74,10 @@
 #'
 #' @export
 drawGPML <- function(
-        infile,outdir = getwd(),outname = NULL,featureIDs = NULL,
-        colorVar = NULL,annGenes = NULL,annMetabolites = NULL,inputDB = NULL,
-        colorNames = NULL,colorList = NULL,NAvalue = "#F0F0F0",legend = FALSE,
-        nodeTable = FALSE,pathInfo = FALSE,openFile = FALSE){
+        infile,outdir=getwd(),outname=NULL,featureIDs=NULL,colorVar=NULL,
+        annGenes=NULL,annMetabolites=NULL,inputDB=NULL,colorNames=NULL,
+        colorList=NULL,NAvalue="#F0F0F0",multiMapping=TRUE,legend=FALSE,
+        nodeTable=FALSE,pathInfo=FALSE,openFile=FALSE){
     # Read and prepare GPML file
     gpml <- XML::xmlToList(XML::xmlParse(xml2::read_xml(infile)))
     gpml_fil <- .prepareGPML(gpml)
@@ -95,7 +99,7 @@ drawGPML <- function(
     colors_df_all <- NULL
     if (plotColor){colors_df_all <- .mapColors(
         nodes_df = nodes_df_all, annGenes, data.frame(annMetabolites), inputDB,
-        featureIDs, colorVar, colorList, NAvalue)}
+        featureIDs, colorVar, colorList, NAvalue, multiMapping)}
     # Make pathway diagram
     outfile <- .openFile(
         gpml$Graphics["BoardWidth"], gpml$Graphics["BoardHeight"],

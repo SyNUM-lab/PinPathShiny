@@ -16,18 +16,22 @@
 #' @param colorList A list with information about the coloring of the nodes.
 #' An example can be generated using the defaultColorList() function.
 #' @param NAvalue Node color for NA color values.
+#' @param multiMapping If a node has multiple associated gene ids,
+#' should all associated values be plotted? If FALSE, only the first gene id
+#' is plotted.
 #' @return A data frame used for plotting colored nodes.
 #' @noRd
 
 .mapColors <- function(
-        nodes_df,
-        annGenes,
-        annMetabolites,
-        inputDB,
-        featureIDs,
-        colorVar,
-        colorList,
-        NAvalue){
+        nodes_df,annGenes,annMetabolites,inputDB,featureIDs,colorVar,
+        colorList,NAvalue,multiMapping){
+
+    # duplicated graph Ids?
+    dup_ids <- sum(duplicated(nodes_df$GraphId1)) > 0
+    if (dup_ids){
+        nodes_df$GraphId1_dup <- nodes_df$GraphId1
+        nodes_df$GraphId1 <- paste0(
+            nodes_df$GraphId1, "_", seq_len(nrow(nodes_df)))}
 
     # Get gene/protein/metabolite IDs of all nodes
     featureIDs_nodes <- nodes_df[,c("Database", "ID", "GraphId1")]
@@ -40,10 +44,16 @@
 
     # Add node annotation to the node graphical elements
     colors_df <- dplyr::left_join(nodes_df, nodeAnn_all, by = "GraphId1")
+    if (dup_ids){
+        colors_df <- dplyr::arrange(colors_df, by = .data$Scale)
+        colors_df$GraphId1 <- colors_df$GraphId1_dup}
 
     # If one node has at least 1 non-NA color value,
     # remove the NA values from different inputIds:
     colors_df <- .removeNAnodes(colors_df)
+    if (!multiMapping){
+        colors_df <- colors_df[!duplicated(
+            paste0(colors_df$GraphId1, "_", colors_df$Scale)),]}
 
     # If there are duplicated IDs, split the node into two parts for coloring
     colors_df <- .splitNode(colors_df)
@@ -469,13 +479,18 @@
 .makeLegend <- function(colorList){
 
     # Default settings
+    same <- .evalLegend(colorList)
     nScales <- length(colorList)
     width <- 1
     height <- 0.5
+    space <- ifelse(same, 0.5, 1)
+    top <- ifelse(same,1.5,1)
 
     # Make empty canvas
     graphics::par(mar = c(1,1,1,1))
-    plot(c(0,2), c(-nScales-0.25,1), col = "white", axes = FALSE, ann = FALSE)
+    plot(
+        c(0,2), c(-nScales*space-0.25,top), col = "white",
+        axes = FALSE, ann = FALSE)
     vps <- gridBase::baseViewports()
     grid::pushViewport(vps$inner, vps$figure, vps$plot)
     grid::grid.rect(
@@ -486,9 +501,62 @@
     # Add color scales
     for (s in seq_len(nScales)){
         ScaleType <- colorList[[s]]$ScaleType
-        if (ScaleType == "Divergent"){.legendDivergent(colorList, s)}
-        if (ScaleType == "Sequential"){.legendSequential(colorList, s)}
-        if (ScaleType == "Qualitative"){.legendQualitative(colorList, s)}
+        if (same){.legendName(colorList, s)}else{
+            if (ScaleType == "Divergent"){.legendDivergent(colorList, s)}
+            if (ScaleType == "Sequential"){.legendSequential(colorList, s)}
+            if (ScaleType == "Qualitative"){.legendQualitative(colorList, s)}
+        }
+    }
+}
+
+.evalLegend <- function(colorList){
+    test_col <- lapply(colorList, function(x)x[["ColorVal"]])
+    test_val <- lapply(colorList, function(x)x[["Color"]])
+    out <- all(vapply(test_col, identical, logical(1), test_col[[1]])) &
+        all(vapply(test_val, identical, logical(1), test_val[[1]]))
+    return(out)
+}
+
+.legendName <- function(colorList, s){
+    nScales <- length(colorList)
+    width <- 1
+    height <- 0.5
+    space <- 0.5
+
+    graphics::text(
+        x = 1.1, y = ((s-1)-nScales)*space,
+        labels = colorList[[s]]$ScaleName, pos = 4, font = 2)
+    graphics::arrows(
+        x0 = 1/(2*nScales) + (s-1)*1/nScales,
+        x1 =1/(2*nScales) + (s-1)*1/nScales,
+        y0 = 0.25, y1 = ((s-1)-nScales)*space, code = 0)
+    graphics::arrows(
+        x0 = 1/(2*nScales) + (s-1)*1/nScales, x1 = 1.1,
+        y0 = ((s-1)-nScales)*space, y1 = ((s-1)-nScales)*space, code = 0)
+
+    if (s == 1){
+        minVal <- colorList[[1]]$ColorVal["MinVal"]
+        midVal <- colorList[[1]]$ColorVal["MidVal"]
+        maxVal <- colorList[[1]]$ColorVal["MaxVal"]
+        pal <- grDevices::colorRampPalette(
+            colors = c(
+                colorList[[1]]$Color["MinCol"],
+                colorList[[1]]$Color["MidCol"],
+                colorList[[1]]$Color["MaxCol"]))
+        grid::grid.rect(
+            x = seq(0.1,0.9,length = 81*2) , y = 1.25,#((s-2)-nScales)*space,
+            width = 0.01/2, height = height, default.units = "native",
+            gp = grid::gpar(col = NA, fill = pal(81*2)))
+        graphics::text(
+            x = 0.1, y = 1,#((s-2)-nScales)*space-0.25,
+            labels = signif(minVal,2), adj = c(1,1), cex = 0.7)
+        graphics::text(
+            x = 0.5, y = 1,#((s-2)-nScales)*space-0.25,
+            labels = signif(midVal,2), adj = c(0.5,1), cex = 0.7)
+        graphics::text(
+            x = 0.9, y = 1,#((s-2)-nScales)*space-0.25,
+            labels = signif(maxVal,2), adj = c(0,1), cex = 0.7)
+
     }
 }
 
