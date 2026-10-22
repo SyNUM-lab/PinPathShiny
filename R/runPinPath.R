@@ -5,6 +5,8 @@
 #' @param force.browser (optional) Logical (TRUE or FALSE). 
 #' Should the app be opened the the browser?.
 #' @return This function will run the PinPath shiny app
+#' @importFrom magrittr `%>%`
+#' @importFrom rlang .data
 #' @examples 
 #' if (interactive()){
 #' PinPathShiny::runPinPath()

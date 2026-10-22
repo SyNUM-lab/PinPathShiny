@@ -36,6 +36,8 @@ Imports:
     enrichplot,
     clusterProfiler,
     rlang,
+    KEGGREST,
+    Biobase,
     shiny,
     data.table,
     DT,
@@ -46,7 +48,6 @@ Imports:
     colourpicker,
     colorspace,
     shinythemes
-
 Suggests: 
     testthat (>= 3.0.0),
     BiocStyle,
