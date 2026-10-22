@@ -1,8 +1,8 @@
 Package: PinPathShiny
 Type: Package
 Title: PinPathShiny - R Shiny app for Pathway Visualization
-Version: 0.99.4
-Date: 2026-03-12
+Version: 0.99.6
+Date: 2026-10-22
 Authors@R: c(person("Jarno", "Koetsier", role = c("aut","cre"),
                      email = "jarno.koetsier@gmail.com",
                      comment = c(ORCID = "0000-0002-7981-1345")),
